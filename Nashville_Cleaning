@@ -1,0 +1,103 @@
+/*
+Cleaning Data in SQL Queries
+*/
+
+
+Select *
+From PortfolioProject.NashvilleHousing
+
+--------------------------------------------------------------------------------------------------------------------------
+
+-- Standardize Date Format
+
+
+Select saleDateConverted, CONVERT(Date,SaleDate)
+From PortfolioProject.NashvilleHousing
+
+
+Update NashvilleHousing
+SET SaleDate = CONVERT(Date,SaleDate)
+
+-- If it doesn't Update properly
+
+ALTER TABLE PortfolioProject.NashvilleHousing
+Add COlumn SaleDateConverted Date;
+
+UPDATE PortfolioProject.NashvilleHousing
+SET SaleDateConverted = CAST(SaleDate AS DATE)
+WHERE SaleDate IS NOT NULL;
+
+UPDATE PortfolioProject.NashvilleHousing
+SET SaleDate = FORMAT_DATE('%Y-%m-%d', PARSE_DATE('%B %d, %Y', SaleDate))
+WHERE SaleDate IS NOT NULL;
+
+--populate property adress--
+Select *
+From PortfolioProject.NashvilleHousing
+--Where PropertyAddress is null
+order by ParcelID
+
+Select a.ParcelID, a.PropertyAddress, b.ParcelID, b.PropertyAddress, IS NULL(a.PropertyAddress,b.PropertyAddress)
+From PortfolioProject.NashvilleHousing a
+JOIN PortfolioProject.NashvilleHousing b
+	on a.ParcelID = b.ParcelID
+	AND a.[UniqueID ] <> b.[UniqueID ]
+Where a.PropertyAddress is null
+
+SELECT
+SUBSTRING(PropertyAddress, 1, CHARINDEX(',', PropertyAddress) -1 ) as Address
+, SUBSTRING(PropertyAddress, CHARINDEX(',', PropertyAddress) + 1 , LEN(PropertyAddress)) as Address
+
+From PortfolioProject.NashvilleHousing
+
+
+ALTER TABLE NashvilleHousing
+Add PropertySplitAddress Nvarchar(255);
+
+UPDATE PortfolioProject.NashvilleHousing
+SET PropertyAddress = REPLACE(PropertyAddress, ',', '')
+WHERE PropertyAddress LIKE '%,%'
+
+
+Update NashvilleHousing
+SET PropertySplitAddress = SUBSTRING(PropertyAddress, 1, CHARINDEX(',', PropertyAddress) -1 )
+
+
+ALTER TABLE NashvilleHousing
+Add PropertySplitCity Nvarchar(255);
+
+Update NashvilleHousing
+SET PropertySplitCity = SUBSTRING(PropertyAddress, CHARINDEX(',', PropertyAddress) + 1 , LEN(PropertyAddress))
+
+
+ALTER TABLE PortfolioProject.NashvilleHousing ADD COLUMN City STRING;
+ALTER TABLE PortfolioProject.NashvilleHousing ADD COLUMN State STRING;
+
+UPDATE PortfolioProject.NashvilleHousing
+SET City = TRIM(SPLIT(SPLIT(OwnerAddress, ',')[SAFE_OFFSET(1)], ' ')[SAFE_OFFSET(0)]),
+    State = TRIM(SPLIT(OwnerAddress, ',')[SAFE_OFFSET(2)]),
+    OwnerAddress = REPLACE(OwnerAddress, ',', '')
+WHERE OwnerAddress LIKE '%, %, %'
+
+UPDATE PortfolioProject.NashvilleHousing
+SET City = TRIM(SPLIT(OwnerAddress, ',')[SAFE_OFFSET(1)]),
+    State = TRIM(SPLIT(OwnerAddress, ',')[SAFE_OFFSET(2)]),
+    OwnerAddress = REGEXP_REPLACE(OwnerAddress, ',.*', '')
+WHERE OwnerAddress LIKE '%,%'
+
+UPDATE PortfolioProject.NashvilleHousing
+SET City = TRIM(SPLIT(OwnerAddress, ' ')[SAFE_OFFSET(2)]),
+    State = TRIM(SPLIT(OwnerAddress, ' ')[SAFE_OFFSET(3)]),
+    OwnerAddress = TRIM(REGEXP_REPLACE(OwnerAddress, CONCAT(City, ' ', State), ''))
+WHERE OwnerAddress LIKE '%, % % %'
+
+-- Delete Unused Columns
+
+
+
+Select *
+From PortfolioProject.NashvilleHousing
+
+
+ALTER TABLE PortfolioProject.NashvilleHousing
+DROP COLUMN OwnerAddress, TaxDistrict, PropertyAddress, SaleDate
