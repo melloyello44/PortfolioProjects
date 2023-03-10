@@ -1,0 +1,53 @@
+##I WANT TO FILTER THE TOP 1500 COINS THAT WERE CREATED ON OR AFTER THE LAST BULLRUN OR SEPTEMBER2021##
+##THEN EXPORT AS A CSV###
+-------------------------------------------------------------------------------------------------------
+
+#CONNECT TO API#
+from requests import Request, Session
+from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
+import json
+
+url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
+parameters = {
+  'start':'1',
+  'limit':'5000',
+  'convert':'USD'
+}
+headers = {
+  'Accepts': 'application/json',
+  'X-CMC_PRO_API_KEY': 'b6c1cdcf-01bb-4776-89bd-c5f367bb3b24',
+}
+
+session = Session()
+session.headers.update(headers)
+
+try:
+  response = session.get(url, params=parameters)
+  data = json.loads(response.text)
+  print(data)
+except (ConnectionError, Timeout, TooManyRedirects) as e:
+  print(e)
+
+###NORMALIZE DATA##
+import pandas as pd
+
+df = pd.json_normalize(data['data'])
+
+###FILTER
+mask = (df['cmc_rank'].between(1, 1500)) & (df['date_added'] > '2021-09-01')
+filtered_df = df[mask]
+
+##ROW COUNT
+print(len(filtered_df
+        ))
+
+
+###RID SCIENTIFIC NOTATION
+
+pd.set_option('display.float_format', lambda x: '%.5f' % x)
+
+##XPORT CSV
+file_path = r'C:\Users\kmello523\OneDrive\Documents\python scripts\filtered_data3.csv'
+filtered_df.to_csv(file_path, index=False)
+
+
